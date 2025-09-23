@@ -3,6 +3,15 @@ import torch
 import torch.nn as nn
 from inspect import isfunction
 
+
+def zero_module(module):
+    """
+    Zero out the parameters of a module and return it.
+    """
+    for p in module.parameters():
+        p.detach().zero_()
+    return module
+
 class LitEma(nn.Module):
     def __init__(self, model, decay=0.9999, use_num_upates=True):
         super().__init__()

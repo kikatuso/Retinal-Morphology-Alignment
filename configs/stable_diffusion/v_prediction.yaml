@@ -1,0 +1,67 @@
+model:
+  target: models.diffusion_models.latent_diffusion.LatentDiffusion
+  params:
+    learning_rate: 1.0e-4
+    linear_start: 0.002
+    linear_end: 0.02
+    rescale_betas : True
+    parameterization: 'v'
+    beta_schedule: 'cosine'
+    num_timesteps_cond: 1
+    log_every_t: 50
+    timesteps: 1000
+    loss_type: l1
+    first_stage_key: "image"
+    use_ema: True   
+    use_snr_scaling: True
+    conditioning_key: 'global' # Key for the conditioning input. If set to `null`, the model is unconditional.
+    cond_stage_key: 'label' # Key for the conditioning stage. If set to `null`, the model is unconditional.
+    image_size: 32
+    channels: 8
+    cond_stage_trainable: True
+    classifier_free_guidance: 0.5 # probability of dropping the conditioning during training for classifier-free guidance.
+    concat_mode: False
+    scale_by_std: True
+    scheduler_config:
+      target: models.diffusion_models.modules.lr_schedulers.LambdaLinearScheduler # this is multiplicative lr scheduler
+      params:
+        warm_up_steps: [15000]
+        cycle_lengths: [740400]  # this will work for 300 epochs at batch size 32; 
+        f_start: [0.01]
+        f_max: [1.0]
+        f_min: [0.10] # LR decays to 0 by the end
+    unet_config:
+      target: models.diffusion_models.modules.unet.UNetModel
+      params:
+        use_spatial_transformer: False # Whether to use spatial transformer layers in the UNet model. Spatial transformers can help the model focus on relevant parts of the input.
+        in_channels: 8 # Number of input channels to the UNet model. Note it needs to include channels of the conditional input if dealing with image conditioning.
+        out_channels: 8 # Number of output channels from the UNet model.
+        model_channels: 256 # Base number of channels in the UNet model. This is multiplied by scaling factors to determine the number of channels at different layers.
+        num_res_blocks: 2 # Number of residual blocks per level in the UNet model.
+        attention_resolutions: [] # list of ratio of reduction in spatial resolution at which attention layers are applied, eg. 4 for 1/4 of the input resolution.
+        channel_mult: [1, 2, 2, 4] # Multipliers for the number of channels at each level of the UNet model.
+        num_heads: 8 # Number of attention heads in the attention layers.
+        context_dim : null # Dimensionality of the conditioning vector (e.g., text embeddings), to be used with spatial transformer layers.
+    first_stage_config: 
+      target: models.autoencoders.autoencoder.AutoencoderKL
+      params:
+        learning_rate: 0.0 # not learning, frozen weights
+        ckpt_path: /well/papiez/users/zwk579/Analysis/DiffusionModels/lightning_logs/vae_gan/20_07_2025/version_5/checkpoints/epoch=77-step=623328.ckpt # Path to the pre-trained autoencoder checkpoint. This is used to encode and decode images.
+        embed_dim: 8
+        ddconfig:
+          double_z: True # Determines whether the latent space has twice the dimensionality. When True, the latent space includes both mean and variance (e.g., for variational autoencoders).
+          z_channels: 8 # Number of channels in the latent representation (i.e., dimensionality of the bottleneck feature map after encoding).
+          resolution: 256 # Resolution (height and width) of input and output images. 
+          in_channels: 3 # Number of input image channels. 
+          out_ch: 3 # Number of output image channels. 
+          ch: 64 # Base number of feature channels in the network. This is multiplied by scaling factors to determine the number of channels at different layers.
+          ch_mult: [ 1,2,2,4]  # num_down = len(ch_mult)-1; Multipliers for the number of channels at each level of the encoder/decoder.
+          num_res_blocks: 1 # Number of residual blocks per level in the encoder and decoder. Residual blocks help improve gradient flow and learning stability.
+          attn_resolutions: [] # List of resolutions (in pixels) at which attention layers are applied. For example, at 16×16 spatial resolution, attention mechanisms are introduced.
+          dropout: 0.0 # Dropout probability for regularization. A value of 0.0 means no dropout is used.
+        loss:
+          target: utils.utils.DummyLoss
+    cond_stage_config:
+      target: models.diffusion_models.simple_diffusion.ConditioningEncoder
+      params:
+        class_emb_size: 1024

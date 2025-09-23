@@ -1,0 +1,16 @@
+# name of the virtual environment folder
+jbhi/ 
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+*.png
+*.pdf
+*.prof
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.mp4
+*.webm
+*.mp3
+*.pdf

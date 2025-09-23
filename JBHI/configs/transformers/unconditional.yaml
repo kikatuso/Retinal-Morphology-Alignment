@@ -1,0 +1,42 @@
+model:
+  target: models.transformers.transformer.Net2NetTransformer
+  params:
+    conditioning_type: null # 'image' for image conditioning, 'label' for label conditioning, None for unconditional
+    base_learning_rate: 4.5e-06
+    pkeep: 0.9 # 1.0 means no noising, 0.25 means 25% tokens are kept
+    transformer_config:
+      target: models.transformers.modules.mintgpt.GPT
+      params:
+        vocab_size: 512
+        block_size: 1024  # = 32x32 which is the number of latent tokens in the VQ-VAE quantized representation of 256x256 images.
+        n_layer: 12
+        n_head: 8
+        n_embd: 512
+        embd_pdrop: 0.1
+        resid_pdrop: 0.1
+        attn_pdrop: 0.1
+    edge_detector_config: null # This is set to None because the model is unconditional and does not require edge detection.
+    first_stage_config: 
+      target: models.autoencoders.autoencoder.VQModel
+      params:
+        ckpt_path: /well/papiez/users/zwk579/Analysis/DiffusionModels/lightning_logs/19_03_2025/autoencoder_256_w_perceptual/version_4/checkpoints/epoch=76-step=915644.ckpt # Path to the pre-trained autoencoder checkpoint. This is used to encode and decode images.
+        optim_lr: 0.0 # No learning for the autoencoder during transformer training.
+        embed_dim: 128 # Dimensionality of the latent space embeddings produced by the quantizer. This determines the size of each embedding vector.
+        n_embed: 512 # The number of discrete embeddings (or "codebook entries") in the quantizer. Larger values allow for more representational capacity.
+        include_edges: False
+        edge_detector_config: False
+        ddconfig:
+          use_sigmoid: False
+          double_z: False # Determines whether the latent space has twice the dimensionality. When True, the latent space includes both mean and variance (e.g., for variational autoencoders).
+          z_channels: 256 # Number of channels in the latent representation (i.e., dimensionality of the bottleneck feature map after encoding).
+          resolution: 256 # Resolution (height and width) of input and output images. 
+          in_channels: 3 # Number of input image channels. 
+          out_ch: 3 # Number of output image channels. 
+          ch: 64 # Base number of feature channels in the network. This is multiplied by scaling factors to determine the number of channels at different layers.
+          ch_mult: [ 1,2,2,4]  # num_down = len(ch_mult)-1; Multipliers for the number of channels at each level of the encoder/decoder.
+          num_res_blocks: 1 # Number of residual blocks per level in the encoder and decoder. Residual blocks help improve gradient flow and learning stability.
+          attn_resolutions: [8] # List of resolutions (in pixels) at which attention layers are applied. For example, at 16×16 spatial resolution, attention mechanisms are introduced.
+          dropout: 0.0 # Dropout probability for regularization. A value of 0.0 means no dropout is used.
+        loss:
+          target: utils.utils.DummyLoss
+    cond_stage_config: __is_unconditional__

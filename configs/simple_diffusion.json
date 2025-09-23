@@ -1,0 +1,40 @@
+{
+    "num_timesteps": 1000,
+    "n_epochs": 1000,
+    "DDP": true,
+    "output_dir": "log/simple_diffusion/",
+    "class_embed_size": 32,
+    "batch_size": 32,
+    "conditional": false,
+    "block_out_channels": [
+        256,
+        256,
+        512,
+        512,
+        768,
+        1024
+    ],
+    "layers_per_block": 1,
+    "down_block_types": [
+        "DownBlock2D",
+        "DownBlock2D",
+        "DownBlock2D",
+        "DownBlock2D",
+        "CrossAttnDownBlock2D",
+        "CrossAttnDownBlock2D"
+    ],
+    "up_block_types": [
+        "CrossAttnUpBlock2D",
+        "CrossAttnUpBlock2D",
+        "UpBlock2D",
+        "UpBlock2D",
+        "UpBlock2D",
+        "UpBlock2D"
+    ],
+    "prediction_type": "epsilon",
+    "num_variables": 8,
+    "autocast": false,
+    "master_port": "12311",
+    "early_stopping_patience": 10,
+    "early_stopping_min_delta": 0.0001
+}

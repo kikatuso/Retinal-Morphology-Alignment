@@ -5,7 +5,7 @@ from pytorch_lightning.utilities.rank_zero import rank_zero_only
 import os
 from tqdm import tqdm
 
-from .dpms import DDPM
+from .ddpm import DDPM
 from . import ddim_timesteps, extract_into_tensor, noise_like, default
 from utils.utils import instantiate_from_config
 from models.autoencoders.modules.distributions import DiagonalGaussianDistribution

@@ -407,3 +407,45 @@ class AutoencoderKL(pl.LightningModule):
         x = 2.*(x-x.min())/(x.max()-x.min()) - 1.
         return x
 
+
+### TO BE USED WITH LATENT DIFFUSION MODELS
+class VQModelInterface(VQModel):
+    def __init__(self, embed_dim, *args, **kwargs):
+        super().__init__(embed_dim=embed_dim, *args, **kwargs)
+        self.embed_dim = embed_dim
+
+    def forward(self, x):
+        """
+        Forward pass through the VQ model.
+        Args:
+            x: Input tensor of shape (batch_size, channels, height, width).
+        Returns:
+            dec: Decoded output tensor.
+        """
+        h = self.encode(x)
+        dec = self.decode(h)
+        return dec
+
+    def encode(self, x):
+        h = self.encoder(x)
+        h = self.quant_conv(h)
+        return h
+    
+    def encode_to_indices(self,x):
+        x = self.encode(x)
+        quant, emb_loss, (perplexity,_,ind) = self.quantize(x)
+        return ind 
+
+    def decode_from_quants(self, quant_indices, z_shape=(1, 128, 32, 32)):
+        bhwc = (z_shape[0], z_shape[2], z_shape[3], z_shape[1])
+        quants = self.quantize.get_codebook_entry(quant_indices, shape=bhwc)
+        quants = self.post_quant_conv(quants)
+        dec = self.decoder(quants)
+        return dec
+
+    def decode(self, h):
+        # also go through quantization layer
+        quant, emb_loss, (perplexity,_,ind) = self.quantize(h)
+        quant = self.post_quant_conv(quant)
+        dec = self.decoder(quant)
+        return dec

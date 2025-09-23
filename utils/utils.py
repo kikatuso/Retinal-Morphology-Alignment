@@ -67,3 +67,4 @@ def instantiate_from_config(config, ignore_keys=[]):
 class DummyLoss(nn.Module):
     def __init__(self,**kwargs):
         super().__init__()
+
